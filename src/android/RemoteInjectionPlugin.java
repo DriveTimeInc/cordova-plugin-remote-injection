@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -211,7 +212,7 @@ public class RemoteInjectionPlugin extends CordovaPlugin {
         private final int promptInterval;
 
         RequestLifecycle(Activity activity, CordovaWebViewEngine engine, int promptInterval) {
-            this.activityRef = new WeakReference<>(activity);
+            this.activityRef = new WeakReference(activity);
             this.engine = engine;
             this.promptInterval = promptInterval;
         }
@@ -260,7 +261,7 @@ public class RemoteInjectionPlugin extends CordovaPlugin {
 
         UserPromptTask(RequestLifecycle lifecycle, Activity activity, CordovaWebViewEngine engine, String url) {
             this.lifecycle = lifecycle;
-            this.activityRef = new WeakReference<>(activity);
+            this.activityRef = new WeakReference(activity);
             this.engine = engine;
             this.url = url;
         }
@@ -284,16 +285,19 @@ public class RemoteInjectionPlugin extends CordovaPlugin {
         public void run() {
             if (lifecycle.isLoading() && activityRef.get() != null && !activityRef.get().isFinishing()) {
                 // Prompts the user giving them the choice to wait on the current request or retry.
-                activityRef.get().runOnUiThread(() -> {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(activityRef.get());
-                    builder.setMessage("The server is taking longer than expected to respond.")
-                            .setPositiveButton("Retry", (dialog, id) -> {
-                                // Obviously only works for GETs but good enough.
-                                engine.loadUrl(engine.getUrl(), false);
-                            })
-                            .setNegativeButton("Wait", (dialog, id) -> lifecycle.startTask(url));
-                    alertDialog = builder.create();
-                    alertDialog.show();
+                activityRef.get().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(activityRef.get());
+                        builder.setMessage("The server is taking longer than expected to respond.")
+                                .setPositiveButton("Retry", (dialog, id) -> {
+                                    // Obviously only works for GETs but good enough.
+                                    engine.loadUrl(engine.getUrl(), false);
+                                })
+                                .setNegativeButton("Wait", (dialog, id) -> lifecycle.startTask(url));
+                        alertDialog = builder.create();
+                        alertDialog.show();
+                    }
                 });
             } else {
                 lifecycle.stopTask();
