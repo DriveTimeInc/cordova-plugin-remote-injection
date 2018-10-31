@@ -3,6 +3,7 @@ package com.truckmovers.cordova;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.res.AssetManager;
+import android.content.DialogInterface;
 import android.util.Base64;
 
 import org.apache.cordova.CordovaPlugin;
@@ -16,7 +17,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang;
+import java.lang.Object;
+import java.lang.Runnable;
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -290,11 +292,17 @@ public class RemoteInjectionPlugin extends CordovaPlugin {
                     public void run() {
                         AlertDialog.Builder builder = new AlertDialog.Builder(activityRef.get());
                         builder.setMessage("The server is taking longer than expected to respond.")
-                                .setPositiveButton("Retry", (dialog, id) -> {
-                                    // Obviously only works for GETs but good enough.
-                                    engine.loadUrl(engine.getUrl(), false);
+                                .setPositiveButton("Retry", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        // Obviously only works for GETs but good enough.
+                                        engine.loadUrl(engine.getUrl(), false);
+                                    }
                                 })
-                                .setNegativeButton("Wait", (dialog, id) -> lifecycle.startTask(url));
+                                .setNegativeButton("Wait", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        lifecycle.startTask(url);
+                                    }
+                                });
                         alertDialog = builder.create();
                         alertDialog.show();
                     }
